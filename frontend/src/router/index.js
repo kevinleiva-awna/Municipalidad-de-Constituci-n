@@ -2,10 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth.store'
 
 const routes = [
-  { path: '/', redirect: () => redirectByRole() },
+  { path: '/', component: () => import('../views/public/Home.vue') },
 
-  { path: '/login',    component: () => import('../views/auth/Login.vue'),    meta: { guest: true } },
-  { path: '/register', component: () => import('../views/auth/Register.vue'), meta: { guest: true } },
+  { path: '/login',    component: () => import('../views/auth/Login.vue'),    meta: { guest: true, bare: true } },
+  { path: '/register', component: () => import('../views/auth/Register.vue'), meta: { guest: true, bare: true } },
 
   { path: '/calendario', component: () => import('../views/public/Calendario.vue') },
   { path: '/eventos/:id', component: () => import('../views/public/DetalleEvento.vue'), props: true },
@@ -22,16 +22,16 @@ const routes = [
   { path: '/:pathMatch(.*)*', component: () => import('../views/shared/NotFound.vue') },
 ]
 
-function redirectByRole() {
+function defaultForRole() {
   const auth = useAuthStore()
-  if (!auth.isAuthenticated) return '/login'
   if (auth.rol === 'ADMIN') return '/dashboard'
   if (auth.rol === 'FUNCIONARIO') return '/admin/eventos'
-  return '/calendario'
+  return '/'
 }
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior() { return { top: 0 } },
   routes,
 })
 
@@ -41,10 +41,10 @@ router.beforeEach((to) => {
   if (to.meta.auth && !auth.isAuthenticated) return '/login'
 
   if (to.meta.roles && !to.meta.roles.includes(auth.rol)) {
-    return redirectByRole()
+    return defaultForRole()
   }
 
-  if (to.meta.guest && auth.isAuthenticated) return redirectByRole()
+  if (to.meta.guest && auth.isAuthenticated) return defaultForRole()
 })
 
 export default router

@@ -1,13 +1,11 @@
 <script setup>
 import { RouterView, useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { useAuthStore } from './stores/auth.store'
 import Navbar from './components/Navbar.vue'
 
-const auth = useAuthStore()
 const route = useRoute()
 
-const showNavbar = computed(() => auth.isAuthenticated && !route.meta.guest)
+const showNavbar = computed(() => !route.meta.bare)
 </script>
 
 <template>
