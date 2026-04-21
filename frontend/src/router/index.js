@@ -12,6 +12,8 @@ const routes = [
 
   { path: '/dashboard',       component: () => import('../views/admin/Dashboard.vue'),       meta: { auth: true, roles: ['ADMIN'] } },
   { path: '/admin/eventos',   component: () => import('../views/admin/GestionEventos.vue'),  meta: { auth: true, roles: ['ADMIN', 'FUNCIONARIO'] } },
+  { path: '/admin/eventos/nuevo', component: () => import('../views/admin/FormularioEvento.vue'), meta: { auth: true, roles: ['ADMIN', 'FUNCIONARIO'] } },
+  { path: '/admin/eventos/:id/editar', component: () => import('../views/admin/FormularioEvento.vue'), props: true, meta: { auth: true, roles: ['ADMIN', 'FUNCIONARIO'] } },
   { path: '/admin/usuarios',  component: () => import('../views/admin/GestionUsuarios.vue'), meta: { auth: true, roles: ['ADMIN'] } },
   { path: '/admin/suscriptores', component: () => import('../views/admin/Suscriptores.vue'), meta: { auth: true, roles: ['ADMIN'] } },
 
