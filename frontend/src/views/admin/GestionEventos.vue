@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEventos } from '../../composables/useEventos'
@@ -13,16 +13,43 @@ const toast = useToast()
 const eventos = ref([])
 const loading = ref(false)
 
+const filtros = reactive({
+  categoria: '',
+  lugar: '',
+  tipo: '',
+  desde: '',
+  hasta: '',
+})
+
+function buildParams() {
+  const params = { limit: 100, publicado: 'all' }
+  if (filtros.categoria) params.categoria = filtros.categoria
+  if (filtros.lugar)     params.lugar     = filtros.lugar
+  if (filtros.tipo)      params.tipo      = filtros.tipo
+  if (filtros.desde)     params.desde     = new Date(filtros.desde).toISOString()
+  if (filtros.hasta)     params.hasta     = new Date(filtros.hasta + 'T23:59:59').toISOString()
+  return params
+}
+
 async function cargar() {
   loading.value = true
   try {
-    const { items } = await listar({ limit: 100 })
+    const { items } = await listar(buildParams())
     eventos.value = items
   } catch (err) {
     toast.error('No se pudieron cargar los eventos')
   } finally {
     loading.value = false
   }
+}
+
+function limpiar() {
+  filtros.categoria = ''
+  filtros.lugar = ''
+  filtros.tipo = ''
+  filtros.desde = ''
+  filtros.hasta = ''
+  cargar()
 }
 
 function puedeEditar(evento) {
@@ -59,10 +86,25 @@ onMounted(cargar)
       >+ Nuevo evento</RouterLink>
     </header>
 
+    <form
+      @submit.prevent="cargar"
+      class="bg-white rounded-xl shadow-sm p-4 mb-4 grid grid-cols-1 md:grid-cols-6 gap-3"
+    >
+      <input v-model="filtros.categoria" placeholder="Categoría" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+      <input v-model="filtros.lugar"     placeholder="Lugar"     class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+      <input v-model="filtros.tipo"      placeholder="Tipo"      class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+      <input v-model="filtros.desde"     type="date" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+      <input v-model="filtros.hasta"     type="date" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none" />
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 bg-brand text-white rounded-lg px-3 py-2 text-sm hover:bg-brand-600 transition">Aplicar</button>
+        <button type="button" @click="limpiar" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm hover:bg-slate-50">Limpiar</button>
+      </div>
+    </form>
+
     <div v-if="loading" class="text-slate-500">Cargando…</div>
 
     <div v-else-if="!eventos.length" class="bg-white rounded-xl p-10 text-center text-slate-500 shadow-sm">
-      Aún no hay eventos. Crea el primero.
+      No se encontraron eventos con estos filtros.
     </div>
 
     <div v-else class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -73,6 +115,7 @@ onMounted(cargar)
             <th class="px-4 py-3">Fecha</th>
             <th class="px-4 py-3">Lugar</th>
             <th class="px-4 py-3">Tipo</th>
+            <th class="px-4 py-3">Estado</th>
             <th class="px-4 py-3">Creador</th>
             <th class="px-4 py-3 text-right">Acciones</th>
           </tr>
@@ -83,6 +126,12 @@ onMounted(cargar)
             <td class="px-4 py-3 text-slate-600">{{ formatoFecha(ev.fecha) }}</td>
             <td class="px-4 py-3 text-slate-600">{{ ev.lugar }}</td>
             <td class="px-4 py-3 text-slate-600">{{ ev.tipo }}</td>
+            <td class="px-4 py-3">
+              <span
+                :class="ev.publicado ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+                class="px-2 py-0.5 rounded text-xs font-medium"
+              >{{ ev.publicado ? 'Publicado' : 'Borrador' }}</span>
+            </td>
             <td class="px-4 py-3 text-slate-600">{{ ev.creadoPor?.nombre || '—' }}</td>
             <td class="px-4 py-3 text-right space-x-2">
               <RouterLink

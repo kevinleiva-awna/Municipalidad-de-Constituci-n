@@ -43,11 +43,15 @@ function validarCreacion(data) {
 }
 
 async function listar(req, res) {
-  const { categoria, lugar, tipo, desde, hasta } = req.query;
+  const { categoria, lugar, tipo, desde, hasta, publicado } = req.query;
   const page  = Math.max(1, parseInt(req.query.page)  || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
 
-  const where = { publicado: true };
+  const where = {};
+  if (publicado === 'true')       where.publicado = true;
+  else if (publicado === 'false') where.publicado = false;
+  else if (publicado !== 'all')   where.publicado = true;
+
   if (categoria) where.categoria = categoria;
   if (lugar)     where.lugar     = lugar;
   if (tipo)      where.tipo      = tipo;
