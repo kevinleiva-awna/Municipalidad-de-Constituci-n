@@ -9,6 +9,7 @@ import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es'
 import { useEventos } from '../../composables/useEventos'
+import EventoCard from '../../components/EventoCard.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -19,6 +20,7 @@ const eventos = ref([])
 const opcionesBase = ref([])
 const cargando = ref(false)
 const cargaInicial = ref(true)
+const modo = ref('calendario') // 'calendario' | 'tarjetas'
 
 const filtros = reactive({
   categoria: '',
@@ -85,6 +87,10 @@ const eventosCalendario = computed(() =>
   }))
 )
 
+const eventosOrdenados = computed(() =>
+  [...eventos.value].sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+)
+
 const calendarOptions = computed(() => ({
   plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
   initialView: 'dayGridMonth',
@@ -136,6 +142,32 @@ onMounted(() => {
       <p class="text-slate-500 mt-1">Explora los próximos eventos de Constitución.</p>
     </header>
 
+    <!-- Toggle de vista -->
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-soft">
+        <button
+          @click="modo = 'calendario'"
+          :class="modo === 'calendario' ? 'bg-brand text-white shadow-brand' : 'text-slate-500 hover:text-slate-900'"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Calendario
+        </button>
+        <button
+          @click="modo = 'tarjetas'"
+          :class="modo === 'tarjetas' ? 'bg-brand text-white shadow-brand' : 'text-slate-500 hover:text-slate-900'"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+          Tarjetas
+        </button>
+      </div>
+    </div>
+
     <div class="bg-white rounded-2xl shadow-soft p-5 flex flex-wrap items-end gap-3 border border-slate-100">
       <label class="block min-w-[150px] flex-1">
         <span class="text-[11px] text-slate-500 uppercase tracking-[0.08em] font-semibold">Categoría</span>
@@ -179,8 +211,37 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-soft p-4 md:p-6 border border-slate-100">
+    <!-- Vista calendario -->
+    <div v-if="modo === 'calendario'" class="bg-white rounded-2xl shadow-soft p-4 md:p-6 border border-slate-100">
       <FullCalendar ref="calendarRef" :options="calendarOptions" />
+    </div>
+
+    <!-- Vista tarjetas -->
+    <div v-else>
+      <div v-if="cargando && !eventos.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-for="n in 6" :key="n" class="bg-white rounded-2xl overflow-hidden shadow-soft animate-pulse">
+          <div class="aspect-[16/10] bg-slate-200"></div>
+          <div class="p-5 space-y-3">
+            <div class="h-3 bg-slate-200 rounded w-1/3"></div>
+            <div class="h-5 bg-slate-200 rounded w-4/5"></div>
+            <div class="h-3 bg-slate-200 rounded w-2/3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="!eventosOrdenados.length" class="bg-white rounded-2xl p-12 text-center shadow-soft border border-slate-100">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <p class="font-semibold text-slate-900">Sin eventos con estos filtros</p>
+        <p class="text-sm text-slate-500 mt-1">Prueba limpiando o cambiando los filtros.</p>
+      </div>
+
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <EventoCard v-for="ev in eventosOrdenados" :key="ev.id" :evento="ev" />
+      </div>
     </div>
   </section>
 </template>
