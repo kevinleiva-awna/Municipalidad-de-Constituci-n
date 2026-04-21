@@ -5,6 +5,7 @@ import { useToast } from 'vue-toastification'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
+import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es'
 import { useEventos } from '../../composables/useEventos'
@@ -13,9 +14,11 @@ const router = useRouter()
 const toast = useToast()
 const { listar } = useEventos()
 
+const calendarRef = ref(null)
 const eventos = ref([])
 const opcionesBase = ref([])
 const cargando = ref(false)
+const cargaInicial = ref(true)
 
 const filtros = reactive({
   categoria: '',
@@ -40,6 +43,16 @@ async function cargar() {
     if (filtros.tipo)      params.tipo      = filtros.tipo
     const { items } = await listar(params)
     eventos.value = items
+    // Si el primer evento está fuera del mes actualmente visible, salta a él
+    if (!cargaInicial.value && items.length > 0 && calendarRef.value) {
+      const api = calendarRef.value.getApi()
+      const view = api.view
+      const first = new Date(items[0].fecha)
+      if (first < view.activeStart || first >= view.activeEnd) {
+        api.gotoDate(first)
+      }
+    }
+    cargaInicial.value = false
   } catch (err) {
     toast.error('No se pudieron cargar los eventos')
   } finally {
@@ -73,19 +86,27 @@ const eventosCalendario = computed(() =>
 )
 
 const calendarOptions = computed(() => ({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+  plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
   initialView: 'dayGridMonth',
   locale: esLocale,
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay',
+    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
   },
   buttonText: {
     today: 'Hoy',
     month: 'Mes',
     week: 'Semana',
     day: 'Día',
+    list: 'Lista',
+  },
+  views: {
+    listMonth: {
+      listDayFormat: { weekday: 'long', day: 'numeric', month: 'long' },
+      listDaySideFormat: false,
+      noEventsText: 'No hay eventos en este mes',
+    },
   },
   events: eventosCalendario.value,
   eventClick: (info) => {
@@ -159,7 +180,7 @@ onMounted(() => {
     </div>
 
     <div class="bg-white rounded-2xl shadow-soft p-4 md:p-6 border border-slate-100">
-      <FullCalendar :options="calendarOptions" />
+      <FullCalendar ref="calendarRef" :options="calendarOptions" />
     </div>
   </section>
 </template>
@@ -180,5 +201,15 @@ onMounted(() => {
 }
 .fc-event {
   cursor: pointer;
+}
+/* Vista lista más legible */
+.fc .fc-list-event:hover td {
+  background-color: #EAF2FA;
+}
+.fc .fc-list-event-dot {
+  border-color: #185FA5;
+}
+.fc .fc-list-day-cushion {
+  background-color: #F8FAFC;
 }
 </style>
