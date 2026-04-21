@@ -1,18 +1,40 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEventos } from '../../composables/useEventos'
+import { useNewsletter } from '../../composables/useNewsletter'
 import { useAuthStore } from '../../stores/auth.store'
 import EventoCard from '../../components/EventoCard.vue'
 
 const auth = useAuthStore()
 const toast = useToast()
 const { listar } = useEventos()
+const { suscribir } = useNewsletter()
 
 const eventos = ref([])
 const totalEventos = ref(0)
 const cargando = ref(true)
+
+const newsletterForm = reactive({ nombre: '', email: '' })
+const newsletterOk = ref(false)
+const enviandoNewsletter = ref(false)
+
+async function enviarSuscripcion() {
+  if (enviandoNewsletter.value) return
+  enviandoNewsletter.value = true
+  try {
+    await suscribir(newsletterForm.nombre, newsletterForm.email)
+    newsletterOk.value = true
+    newsletterForm.nombre = ''
+    newsletterForm.email = ''
+    toast.success('¡Listo! Ya estás suscrito')
+  } catch (err) {
+    toast.error(err.response?.data?.error || 'No se pudo completar la suscripción')
+  } finally {
+    enviandoNewsletter.value = false
+  }
+}
 
 const ahora = new Date().toISOString()
 
@@ -232,6 +254,75 @@ onMounted(cargar)
             </div>
             <h3 class="text-xl font-bold text-slate-900 mb-2">{{ paso.titulo }}</h3>
             <p class="text-slate-600">{{ paso.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="py-16 bg-slate-50">
+      <div class="max-w-4xl mx-auto px-6">
+        <div class="bg-white rounded-3xl shadow-soft-lg border border-slate-100 overflow-hidden grid md:grid-cols-2">
+          <div class="p-8 md:p-10 bg-gradient-to-br from-brand-50 via-white to-brand-50 flex flex-col justify-center">
+            <span class="inline-flex items-center gap-2 bg-brand/10 text-brand text-xs font-semibold px-3 py-1 rounded-full mb-4 w-fit">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Newsletter
+            </span>
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-900 leading-tight mb-2">
+              No te pierdas nada
+            </h2>
+            <p class="text-slate-600">
+              Recibe los próximos eventos culturales de Constitución directamente en tu correo. Sin spam, solo lo esencial.
+            </p>
+          </div>
+
+          <div class="p-8 md:p-10">
+            <div v-if="newsletterOk" class="h-full flex flex-col items-center justify-center text-center space-y-3">
+              <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
+                <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-bold text-slate-900">¡Gracias por suscribirte!</p>
+                <p class="text-sm text-slate-500 mt-1">Te llegará el primer newsletter pronto.</p>
+              </div>
+              <button
+                @click="newsletterOk = false"
+                class="text-sm text-brand hover:underline"
+              >Suscribir otro correo</button>
+            </div>
+            <form v-else @submit.prevent="enviarSuscripcion" class="space-y-3">
+              <input
+                v-model="newsletterForm.nombre"
+                required
+                placeholder="Tu nombre"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition"
+              />
+              <input
+                v-model="newsletterForm.email"
+                type="email"
+                required
+                placeholder="tu@correo.cl"
+                class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition"
+              />
+              <button
+                type="submit"
+                :disabled="enviandoNewsletter"
+                class="w-full inline-flex items-center justify-center gap-2 bg-brand text-white font-semibold px-5 py-3 rounded-xl hover:bg-brand-600 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 transition shadow-brand"
+              >
+                <svg v-if="enviandoNewsletter" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                {{ enviandoNewsletter ? 'Enviando…' : 'Suscribirme al newsletter' }}
+              </button>
+              <p class="text-[11px] text-slate-400 text-center">
+                Al suscribirte aceptas recibir correos. Puedes darte de baja cuando quieras.
+              </p>
+            </form>
           </div>
         </div>
       </div>
