@@ -108,32 +108,31 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="max-w-6xl mx-auto p-4 md:p-6">
-    <header class="flex flex-wrap items-end justify-between gap-3 mb-4">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Calendario cultural</h1>
-        <p class="text-slate-600">Explora los próximos eventos de Constitución.</p>
-      </div>
+  <section class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+    <header>
+      <p class="text-brand font-semibold uppercase tracking-[0.12em] text-xs mb-1">Agenda pública</p>
+      <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Calendario cultural</h1>
+      <p class="text-slate-500 mt-1">Explora los próximos eventos de Constitución.</p>
     </header>
 
-    <div class="bg-white rounded-xl shadow-sm p-4 mb-4 flex flex-wrap items-end gap-3">
-      <label class="block min-w-[150px]">
-        <span class="text-xs text-slate-500 uppercase tracking-wide">Categoría</span>
-        <select v-model="filtros.categoria" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none">
+    <div class="bg-white rounded-2xl shadow-soft p-5 flex flex-wrap items-end gap-3 border border-slate-100">
+      <label class="block min-w-[150px] flex-1">
+        <span class="text-[11px] text-slate-500 uppercase tracking-[0.08em] font-semibold">Categoría</span>
+        <select v-model="filtros.categoria" class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition">
           <option value="">Todas</option>
           <option v-for="c in categoriasDisponibles" :key="c" :value="c">{{ c }}</option>
         </select>
       </label>
-      <label class="block min-w-[180px]">
-        <span class="text-xs text-slate-500 uppercase tracking-wide">Lugar</span>
-        <select v-model="filtros.lugar" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none">
+      <label class="block min-w-[180px] flex-1">
+        <span class="text-[11px] text-slate-500 uppercase tracking-[0.08em] font-semibold">Lugar</span>
+        <select v-model="filtros.lugar" class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition">
           <option value="">Todos</option>
           <option v-for="l in lugaresDisponibles" :key="l" :value="l">{{ l }}</option>
         </select>
       </label>
-      <label class="block min-w-[150px]">
-        <span class="text-xs text-slate-500 uppercase tracking-wide">Tipo</span>
-        <select v-model="filtros.tipo" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none">
+      <label class="block min-w-[150px] flex-1">
+        <span class="text-[11px] text-slate-500 uppercase tracking-[0.08em] font-semibold">Tipo</span>
+        <select v-model="filtros.tipo" class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition">
           <option value="">Todos</option>
           <option v-for="t in tiposDisponibles" :key="t" :value="t">{{ t }}</option>
         </select>
@@ -141,14 +140,25 @@ onMounted(() => {
       <button
         type="button"
         @click="limpiar"
-        class="rounded-lg border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
+        class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium hover:bg-slate-50 transition"
       >Limpiar</button>
 
-      <span v-if="cargando" class="ml-auto text-sm text-slate-500">Cargando…</span>
-      <span v-else class="ml-auto text-sm text-slate-500">{{ eventos.length }} eventos</span>
+      <div class="ml-auto flex items-center gap-2">
+        <span v-if="cargando" class="inline-flex items-center gap-1.5 text-sm text-slate-500">
+          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          Cargando…
+        </span>
+        <span v-else class="inline-flex items-center gap-1.5 text-sm text-brand font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          {{ eventos.length }} eventos
+        </span>
+      </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm p-3 md:p-4">
+    <div class="bg-white rounded-2xl shadow-soft p-4 md:p-6 border border-slate-100">
       <FullCalendar :options="calendarOptions" />
     </div>
   </section>
