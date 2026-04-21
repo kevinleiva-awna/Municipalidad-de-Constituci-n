@@ -1,4 +1,41 @@
+const { format } = require('@fast-csv/format');
 const prisma = require('../utils/prisma');
+
+async function exportarEventos(req, res) {
+  const fecha = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="eventos-${fecha}.csv"`);
+
+  const csv = format({ headers: true, writeBOM: true });
+  csv.pipe(res);
+
+  const eventos = await prisma.evento.findMany({
+    include: { creadoPor: { select: { nombre: true } } },
+    orderBy: { fecha: 'asc' },
+  });
+
+  for (const e of eventos) {
+    csv.write({
+      id: e.id,
+      titulo: e.titulo,
+      fecha: e.fecha.toISOString(),
+      fecha_fin: e.fechaFin ? e.fechaFin.toISOString() : '',
+      lugar: e.lugar,
+      categoria: e.categoria,
+      tipo: e.tipo,
+      artista: e.artista || '',
+      organizador: e.organizador || '',
+      aforo: e.aforo ?? '',
+      valor_clp: e.valor ?? 0,
+      publicado: e.publicado ? 'sí' : 'no',
+      creado_por: e.creadoPor?.nombre || '',
+      imagen_url: e.imagenUrl || '',
+      creado_en: e.createdAt.toISOString(),
+    });
+  }
+
+  csv.end();
+}
 
 async function stats(req, res) {
   const ahora = new Date();
@@ -66,4 +103,4 @@ async function stats(req, res) {
   });
 }
 
-module.exports = { stats };
+module.exports = { stats, exportarEventos };

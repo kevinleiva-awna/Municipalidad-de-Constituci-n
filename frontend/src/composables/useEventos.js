@@ -39,5 +39,19 @@ export function useEventos() {
     await axios.delete(`/eventos/${id}`)
   }
 
-  return { listar, obtener, crear, actualizar, eliminar }
+  async function descargarCSV() {
+    const response = await axios.get('/admin/eventos/exportar', { responseType: 'blob' })
+    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const fecha = new Date().toISOString().slice(0, 10)
+    a.href = url
+    a.download = `eventos-${fecha}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  return { listar, obtener, crear, actualizar, eliminar, descargarCSV }
 }

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -12,6 +12,7 @@ import { useEventos } from '../../composables/useEventos'
 import EventoCard from '../../components/EventoCard.vue'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const { listar } = useEventos()
 
@@ -128,7 +129,27 @@ const calendarOptions = computed(() => ({
 
 watch(filtros, cargar, { deep: true })
 
+// Sync filtros y modo a la URL
+watch([filtros, modo], () => {
+  const query = { ...route.query }
+  const setOrDelete = (key, val) => {
+    if (val) query[key] = val
+    else delete query[key]
+  }
+  setOrDelete('categoria', filtros.categoria)
+  setOrDelete('lugar',     filtros.lugar)
+  setOrDelete('tipo',      filtros.tipo)
+  setOrDelete('modo',      modo.value === 'tarjetas' ? 'tarjetas' : '')
+  router.replace({ query }).catch(() => {})
+}, { deep: true })
+
 onMounted(() => {
+  // Hidratar filtros y modo desde la URL
+  if (route.query.categoria) filtros.categoria = String(route.query.categoria)
+  if (route.query.lugar)     filtros.lugar     = String(route.query.lugar)
+  if (route.query.tipo)      filtros.tipo      = String(route.query.tipo)
+  if (route.query.modo === 'tarjetas') modo.value = 'tarjetas'
+
   cargarOpcionesBase()
   cargar()
 })

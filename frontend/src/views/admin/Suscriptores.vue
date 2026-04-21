@@ -2,9 +2,11 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useNewsletter } from '../../composables/useNewsletter'
+import { useConfirm } from '../../composables/useConfirm'
 
 const { listar, desactivar, descargarCSV } = useNewsletter()
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const items = ref([])
 const total = ref(0)
@@ -43,7 +45,14 @@ async function cargar() {
 }
 
 async function toggleDesactivar(suscriptor) {
-  if (!confirm(`¿Dar de baja a ${suscriptor.nombre}?`)) return
+  const ok = await confirm({
+    title: `Dar de baja a ${suscriptor.nombre}`,
+    message: `Dejará de recibir los newsletters enviados a ${suscriptor.email}.`,
+    confirmText: 'Dar de baja',
+    cancelText: 'Cancelar',
+    variant: 'warning',
+  })
+  if (!ok) return
   try {
     await desactivar(suscriptor.id)
     const i = items.value.findIndex((s) => s.id === suscriptor.id)

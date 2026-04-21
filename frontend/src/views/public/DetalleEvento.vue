@@ -44,6 +44,32 @@ function icsEscape(text) {
   return (text || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
 }
 
+async function compartir() {
+  if (!evento.value) return
+  const url = window.location.href
+  const texto = `${evento.value.titulo} — ${evento.value.lugar}`
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: evento.value.titulo,
+        text: texto,
+        url,
+      })
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        toast.error('No se pudo compartir')
+      }
+    }
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(url)
+    toast.success('Enlace copiado al portapapeles')
+  } catch {
+    toast.info('Copia manual: ' + url)
+  }
+}
+
 function descargarICS() {
   const ev = evento.value
   if (!ev) return
@@ -267,6 +293,15 @@ onMounted(cargar)
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                 </svg>
                 Agregar a mi calendario
+              </button>
+              <button
+                @click="compartir"
+                class="w-full mt-2 inline-flex items-center justify-center gap-2 border border-slate-200 text-slate-700 font-semibold px-5 py-3 rounded-xl hover:bg-slate-50 transition"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Compartir evento
               </button>
               <p class="text-xs text-slate-400 text-center mt-3">
                 Compatible con Google, Apple, Outlook

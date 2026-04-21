@@ -2,6 +2,7 @@
 import { RouterView, useRoute } from 'vue-router'
 import { computed } from 'vue'
 import Navbar from './components/Navbar.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
 import AdminLayout from './layouts/AdminLayout.vue'
 
 const route = useRoute()
@@ -28,4 +29,7 @@ const layout = computed(() => route.meta.layout || (route.meta.bare ? 'bare' : '
       </Transition>
     </RouterView>
   </div>
+
+  <!-- Confirm dialog global -->
+  <ConfirmDialog />
 </template>

@@ -4,14 +4,17 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEventos } from '../../composables/useEventos'
 import { useAuthStore } from '../../stores/auth.store'
+import { useConfirm } from '../../composables/useConfirm'
 
-const { listar, eliminar } = useEventos()
+const { listar, eliminar, descargarCSV } = useEventos()
 const auth = useAuthStore()
 const router = useRouter()
 const toast = useToast()
+const { confirm } = useConfirm()
 
 const eventos = ref([])
 const loading = ref(false)
+const exportando = ref(false)
 
 const filtros = reactive({
   categoria: '',
@@ -59,13 +62,33 @@ function puedeEditar(evento) {
 }
 
 async function confirmarEliminar(evento) {
-  if (!confirm(`¿Eliminar el evento "${evento.titulo}"?`)) return
+  const ok = await confirm({
+    title: `Eliminar "${evento.titulo}"`,
+    message: 'Esta acción no se puede deshacer. El evento y sus referencias serán eliminados permanentemente.',
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+    variant: 'danger',
+  })
+  if (!ok) return
   try {
     await eliminar(evento.id)
     toast.success('Evento eliminado')
     await cargar()
   } catch (err) {
     toast.error(err.response?.data?.error || 'No se pudo eliminar')
+  }
+}
+
+async function exportar() {
+  if (exportando.value) return
+  exportando.value = true
+  try {
+    await descargarCSV()
+    toast.success('CSV descargado')
+  } catch (err) {
+    toast.error('No se pudo generar el CSV')
+  } finally {
+    exportando.value = false
   }
 }
 
@@ -90,15 +113,32 @@ onMounted(cargar)
         <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Gestión de eventos</h1>
         <p class="text-slate-500 mt-1">{{ eventos.length }} {{ eventos.length === 1 ? 'evento' : 'eventos' }} encontrados</p>
       </div>
-      <RouterLink
-        to="/admin/eventos/nuevo"
-        class="inline-flex items-center gap-2 bg-brand text-white px-5 py-2.5 rounded-xl hover:bg-brand-600 hover:-translate-y-0.5 active:translate-y-0 transition shadow-brand font-semibold"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-        Nuevo evento
-      </RouterLink>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="auth.rol === 'ADMIN'"
+          @click="exportar"
+          :disabled="exportando || !eventos.length"
+          class="inline-flex items-center gap-2 border border-slate-200 bg-white text-slate-700 px-4 py-2.5 rounded-xl hover:bg-slate-50 disabled:opacity-60 transition font-medium"
+        >
+          <svg v-if="exportando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span class="hidden sm:inline">{{ exportando ? 'Exportando…' : 'Exportar CSV' }}</span>
+        </button>
+        <RouterLink
+          to="/admin/eventos/nuevo"
+          class="inline-flex items-center gap-2 bg-brand text-white px-5 py-2.5 rounded-xl hover:bg-brand-600 hover:-translate-y-0.5 active:translate-y-0 transition shadow-brand font-semibold"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo evento
+        </RouterLink>
+      </div>
     </header>
 
     <!-- Filtros -->
@@ -203,6 +243,16 @@ onMounted(cargar)
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="puedeEditar(ev)"
+                    @click="router.push({ path: '/admin/eventos/nuevo', query: { from: ev.id } })"
+                    title="Duplicar"
+                    class="p-2 rounded-lg hover:bg-violet-50 text-violet-600 hover:text-violet-700 transition"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                   </button>
                   <button

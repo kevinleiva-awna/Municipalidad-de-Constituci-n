@@ -1,19 +1,22 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useEventos } from '../../composables/useEventos'
 
 const props = defineProps({ id: { type: String, default: null } })
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const { obtener, crear, actualizar } = useEventos()
 
 const esEdicion = computed(() => !!props.id)
+const esDuplicado = computed(() => !props.id && !!route.query.from)
 const loading = ref(false)
 const cargando = ref(false)
 const imagen = ref(null)
 const imagenPreview = ref(null)
+const duplicadoDe = ref(null)
 
 const form = ref({
   titulo: '',
@@ -38,15 +41,20 @@ function toDatetimeLocal(iso) {
 }
 
 async function cargar() {
-  if (!props.id) return
+  const idCarga = props.id || route.query.from
+  if (!idCarga) return
   cargando.value = true
   try {
-    const ev = await obtener(props.id)
+    const ev = await obtener(idCarga)
+    if (esDuplicado.value) {
+      duplicadoDe.value = ev.titulo
+    }
     form.value = {
-      titulo: ev.titulo,
+      titulo: esDuplicado.value ? `${ev.titulo} (copia)` : ev.titulo,
       descripcion: ev.descripcion || '',
-      fecha: toDatetimeLocal(ev.fecha),
-      fechaFin: toDatetimeLocal(ev.fechaFin),
+      // En duplicado, limpio fechas para forzar elegir nuevas
+      fecha: esDuplicado.value ? '' : toDatetimeLocal(ev.fecha),
+      fechaFin: esDuplicado.value ? '' : toDatetimeLocal(ev.fechaFin),
       lugar: ev.lugar,
       artista: ev.artista || '',
       aforo: ev.aforo ?? '',
@@ -54,9 +62,10 @@ async function cargar() {
       tipo: ev.tipo,
       organizador: ev.organizador || '',
       valor: ev.valor ?? '',
-      publicado: ev.publicado,
+      publicado: esDuplicado.value ? false : ev.publicado,
     }
-    if (ev.imagenUrl) imagenPreview.value = ev.imagenUrl
+    // En edición mostramos la imagen actual; en duplicado dejamos vacío para que re-suban
+    if (ev.imagenUrl && esEdicion.value) imagenPreview.value = ev.imagenUrl
   } catch (err) {
     toast.error('No se pudo cargar el evento')
     router.push('/admin/eventos')
@@ -111,7 +120,10 @@ onMounted(cargar)
         <h1 class="text-3xl md:text-4xl font-bold text-slate-900">
           {{ esEdicion ? 'Editar evento' : 'Nuevo evento' }}
         </h1>
-        <p class="text-slate-500 mt-1">
+        <p v-if="esDuplicado && duplicadoDe" class="text-slate-500 mt-1">
+          Duplicando desde <span class="font-semibold text-slate-900">{{ duplicadoDe }}</span> · elige una nueva fecha y ajusta los datos.
+        </p>
+        <p v-else class="text-slate-500 mt-1">
           {{ esEdicion ? 'Actualiza los datos del evento.' : 'Completa los datos para publicar un nuevo evento.' }}
         </p>
       </div>

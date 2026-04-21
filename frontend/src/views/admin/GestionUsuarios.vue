@@ -3,10 +3,12 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useUsuarios } from '../../composables/useUsuarios'
 import { useAuthStore } from '../../stores/auth.store'
+import { useConfirm } from '../../composables/useConfirm'
 
 const { listar, crear, cambiarRol, desactivar, reactivar } = useUsuarios()
 const toast = useToast()
 const auth = useAuthStore()
+const { confirm } = useConfirm()
 
 const usuarios = ref([])
 const loading = ref(false)
@@ -103,6 +105,16 @@ async function actualizarRol(usuario, nuevoRol) {
 }
 
 async function toggleActivo(usuario) {
+  if (usuario.activo) {
+    const ok = await confirm({
+      title: `Desactivar a ${usuario.nombre}`,
+      message: 'El usuario no podrá iniciar sesión. Puedes reactivarlo cuando quieras.',
+      confirmText: 'Desactivar',
+      cancelText: 'Cancelar',
+      variant: 'warning',
+    })
+    if (!ok) return
+  }
   try {
     const fn = usuario.activo ? desactivar : reactivar
     const user = await fn(usuario.id)
