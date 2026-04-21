@@ -63,4 +63,43 @@ async function me(req, res) {
   return res.json({ user: publicUser(user) });
 }
 
-module.exports = { register, login, me };
+async function updateMe(req, res) {
+  const { nombre, password, passwordActual } = req.body || {};
+  const updates = {};
+
+  if (nombre !== undefined) {
+    if (!nombre.trim()) {
+      return res.status(400).json({ error: 'El nombre no puede estar vacío' });
+    }
+    updates.nombre = nombre.trim();
+  }
+
+  if (password) {
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    if (!passwordActual) {
+      return res.status(400).json({ error: 'Debes ingresar tu contraseña actual' });
+    }
+    const actual = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!actual) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const ok = await bcrypt.compare(passwordActual, actual.passwordHash);
+    if (!ok) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+    updates.passwordHash = await bcrypt.hash(password, 10);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'No hay cambios para guardar' });
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: updates,
+  });
+
+  return res.json({ user: publicUser(user) });
+}
+
+module.exports = { register, login, me, updateMe };
